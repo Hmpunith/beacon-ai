@@ -20,15 +20,17 @@ from models.schemas import (
     SessionCreate, SessionResponse, DashboardResponse,
     StudentProfile, HealthResponse
 )
-from agents.orchestrator import OrchestratorAgent
-from rag.knowledge_base import KnowledgeBase
+
+# Lazy imports — these pull in chromadb/onnxruntime which are slow
+# from agents.orchestrator import OrchestratorAgent
+# from rag.knowledge_base import KnowledgeBase
 
 load_dotenv()
 
 # --- In-memory storage ---
 sessions: dict[str, dict] = {}
-knowledge_base: Optional[KnowledgeBase] = None
-orchestrator: Optional[OrchestratorAgent] = None
+knowledge_base = None
+orchestrator = None
 _init_done = False
 
 
@@ -37,6 +39,9 @@ async def _init_services():
     global knowledge_base, orchestrator, _init_done
     try:
         print("[Beacon AI] Initializing services...")
+        # Import here to avoid slow module-level loading
+        from rag.knowledge_base import KnowledgeBase
+        from agents.orchestrator import OrchestratorAgent
         knowledge_base = KnowledgeBase()
         await knowledge_base.initialize()
         orchestrator = OrchestratorAgent(knowledge_base)
@@ -44,7 +49,8 @@ async def _init_services():
         print("[Beacon AI] Ready.")
     except Exception as e:
         print(f"[Beacon AI] Init error: {e}")
-        # Still mark as done so health checks pass
+        import traceback
+        traceback.print_exc()
         _init_done = True
 
 
