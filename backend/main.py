@@ -33,17 +33,22 @@ knowledge_base = None
 orchestrator = None
 _init_done = False
 
-
 async def _init_services():
     """Initialize services in background so server starts fast."""
     global knowledge_base, orchestrator, _init_done
     try:
         print("[Beacon AI] Initializing services...")
-        # Import here to avoid slow module-level loading
-        from rag.knowledge_base import KnowledgeBase
+        # Try to load RAG (requires chromadb) — optional
+        try:
+            from rag.knowledge_base import KnowledgeBase
+            knowledge_base = KnowledgeBase()
+            await knowledge_base.initialize()
+            print("[Beacon AI] RAG knowledge base loaded.")
+        except ImportError:
+            print("[Beacon AI] ChromaDB not available, skipping RAG.")
+            knowledge_base = None
+
         from agents.orchestrator import OrchestratorAgent
-        knowledge_base = KnowledgeBase()
-        await knowledge_base.initialize()
         orchestrator = OrchestratorAgent(knowledge_base)
         _init_done = True
         print("[Beacon AI] Ready.")
