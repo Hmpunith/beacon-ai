@@ -7,12 +7,16 @@ import uuid
 from typing import AsyncGenerator, Optional
 
 from agents.gemma_client import gemma_client
-from rag.knowledge_base import KnowledgeBase
 from models.schemas import QuizQuestion, QuizResponse
+
+try:
+    from rag.knowledge_base import KnowledgeBase
+except ImportError:
+    KnowledgeBase = None
 
 
 class OrchestratorAgent:
-    def __init__(self, knowledge_base: KnowledgeBase):
+    def __init__(self, knowledge_base=None):
         self.kb = knowledge_base
         self.client = gemma_client
 
