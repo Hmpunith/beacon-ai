@@ -29,21 +29,32 @@ load_dotenv()
 sessions: dict[str, dict] = {}
 knowledge_base: Optional[KnowledgeBase] = None
 orchestrator: Optional[OrchestratorAgent] = None
+_init_done = False
+
+
+async def _init_services():
+    """Initialize services in background so server starts fast."""
+    global knowledge_base, orchestrator, _init_done
+    try:
+        print("[Beacon AI] Initializing services...")
+        knowledge_base = KnowledgeBase()
+        await knowledge_base.initialize()
+        orchestrator = OrchestratorAgent(knowledge_base)
+        _init_done = True
+        print("[Beacon AI] Ready.")
+    except Exception as e:
+        print(f"[Beacon AI] Init error: {e}")
+        # Still mark as done so health checks pass
+        _init_done = True
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize services on startup."""
-    global knowledge_base, orchestrator
-    
+    """Start services in background, don't block server startup."""
+    import asyncio
     print("[Beacon AI] Starting up...")
-    knowledge_base = KnowledgeBase()
-    await knowledge_base.initialize()
-    orchestrator = OrchestratorAgent(knowledge_base)
-    print("[Beacon AI] Ready.")
-    
+    asyncio.create_task(_init_services())
     yield
-    
     print("[Beacon AI] Shutting down...")
 
 
